@@ -1,0 +1,152 @@
+# Thermal mismatch hypothesis across systems (TMHAS)
+# Maps
+
+library(visreg)
+library(lattice)
+library(glmmTMB)
+library(lme4)
+library(MuMIn)
+library(data.table)
+library(raster)
+library(RColorBrewer)
+library(rworldmap)
+library(ggplot2)
+library(rasterVis)
+
+datafinal <- read.csv("~/tmhas/datafinal052120.csv")
+
+data(countriesLow)
+countriesLow <- countriesLow[countriesLow$SOVEREIGNT!="Antarctica",]
+
+mp <- brewer.pal(n = 9, name = "Oranges")
+mp2 <- brewer.pal(n=9, name="Purples")
+my.palette <- c(rep(mp2[6],2),mp2[5:4],mp[1],mp[4:9],
+                rep(mp[9],7))
+sequ <- seq(-.5,1.2,.1)
+
+# Training model
+glmm<-glmmTMB(cbind(Infected, Uninfected)~
+                Longterm.tmp:Monthly.tmp
+              +Longterm.tmp+Monthly.tmp
+              +log(Monthly.pre+1)
+              +(1|Paper)
+              ,family="binomial", data=datafinal)
+
+# Climate data
+bio1<-raster("~/tmhas/wc2-5/bio1.bil")/10
+bio1<-aggregate(bio1, fact=5, fun=mean)
+bio1norm<-bio1; bio1norm[bio1norm<(-10)]<-NA #can't model arctic
+bio1cold<-bio1; bio1cold[bio1cold>(-10)]<-NA 
+bio1alt<-bio1 #for getting points
+bio1alt[is.na(bio1alt[])] <- -9999 
+
+# Testing data
+testdata<-data.frame(Longterm.tmp=getValues(bio1))
+testdata$Monthly.tmp<-testdata$Longterm.tmp
+testdata$lon<-rasterToPoints(bio1alt)[,1]
+testdata$lat<-rasterToPoints(bio1alt)[,2]
+testdata$Paper<-sample(as.character(datafinal$Paper),nrow(testdata),replace=T)
+testdata$Monthly.pre<-rep(median(datafinal$Monthly.pre),
+                          nrow(testdata))
+testdata$abslat<-abs(testdata$lat)      
+pred <- predict(glmm, newdata=testdata, type="response")
+bio1.pred <- setValues(bio1, pred)
+plot(bio1.pred)
+
+# Testing model 2 - +3 warming
+testdata3<-testdata
+testdata3$Monthly.tmp<-testdata$Longterm.tmp+3
+pred3 <- predict(glmm, newdata=testdata3, type="response")
+bio1.pred3 <- setValues(bio1, pred3)
+plot(bio1.pred3)
+
+pred.warm3 <- (pred3/pred)-1
+bio1.predwarm3 <- setValues(bio1, pred.warm3)
+bio1.predwarm3 <- mask(bio1.predwarm3, bio1norm)
+plot(bio1.predwarm3, col = my.palette)
+plot(bio1cold, col="gray90", legend=F, add=T)
+plot(countriesLow, add=T, border="gray25")
+
+# CCSM4 rcp scenarios
+{jpeg("~/tmhas/map.percentage.rcp.rev1btest.jpg", 
+      width=1500, height=1000, units="px")
+  par(mai=c(.9,.9,.9,.9), mar=c(5,4,4,2), mfrow=c(2,2), mgp=c(2.7,1.3,0)) 
+  for (rcp in c(26,45,60,85)){
+    r.rcp<-raster(paste0("~/tmhas/wc2-5/cc",rcp,"bi701.tif"))/10
+    r.rcp<-projectRaster(r.rcp, bio1, method='bilinear')
+    
+    testdata.rcp<-testdata
+    testdata.rcp$Monthly.tmp<-getValues(r.rcp)
+    pred.rcp <- predict(glmm, newdata=testdata.rcp, type="response")
+    r.pred.rcp <- setValues(bio1, pred.rcp)
+    
+    pred.pct <- (pred.rcp/pred)-1
+    r.rcp <- setValues(bio1, pred.pct)
+    r.rcp <- mask(r.rcp, bio1norm)
+    
+    plot(r.rcp, breaks=sequ,
+         col = my.palette,
+         cex.axis=2, legend=F)
+    plot(bio1cold, col="gray90", legend=F, add=T)
+    plot(countriesLow, add=T, border="gray25")
+    title(paste0("RCP-",(rcp/10),ifelse(rcp==60,".0","")), cex.main=3)
+  }
+  dev.off()
+}
+
+######### Parasite-level maps
+
+# CCSM4 rcp scenarios (by parasite type)
+parasite.types<-c("Bacteria","Fungus","Helminth","Virus")
+
+# Get projection raster - 8.5 only
+r.rcp<-raster(paste0("~/tmhas/wc2-5/cc85bi701.tif"))/10
+r.rcp<-projectRaster(r.rcp, bio1, method='bilinear')
+
+# Training model
+datamodel <- datafinal[datafinal$Disease.type!="Arthropod" 
+                       & datafinal$Disease.type!="Protozoa"
+                       ,]
+datamodel<-droplevels(datamodel)
+glmm<-glmmTMB(cbind(Infected, Uninfected)~
+                Longterm.tmp:Monthly.tmp
+              +Longterm.tmp:Disease.type
+              +Monthly.tmp:Disease.type
+              +Longterm.tmp:Monthly.tmp:Disease.type
+              +Longterm.tmp+Monthly.tmp
+              +Disease.type
+              +log(Monthly.pre+1)
+              +(1|Paper)
+              ,family="binomial", data=datamodel)
+
+# 4 panel plot
+{jpeg("~/tmhas/map.percentage.dis.rev1btest.jpg",
+      width=1500, height=1000, units="px")
+  par(mai=c(.9,.9,.9,.9), mar=c(5,4,4,2), mfrow=c(2,2), mgp=c(2.7,1.3,0)) 
+  # Loop to make predictions across disease types
+  for (partype in parasite.types){
+    # Test data, set disease
+    testdata$Disease.type<-partype
+    # Make predictions under old climate, plot
+    pred <- predict(glmm, newdata=testdata, type="response")
+    bio1.pred <- setValues(bio1, pred)
+    
+    # Test data for rcp, set monthly tmp, make predictions
+    testdata.rcp <- testdata
+    testdata.rcp$Monthly.tmp<-getValues(r.rcp)
+    pred.rcp <- predict(glmm, newdata=testdata.rcp, type="response")
+    r.pred.rcp <- setValues(bio1, pred.rcp)
+    
+    # Get difference, plot
+    pred.pct <- (pred.rcp/pred)-1
+    r.rcp.pct <- setValues(bio1, pred.pct)
+    r.rcp.pct <- mask(r.rcp.pct, bio1norm)
+    plot(r.rcp.pct,breaks=sequ,
+         col = my.palette,
+         cex.axis=2,legend=F)
+    plot(bio1cold, col="gray90", legend=F, add=T)
+    plot(countriesLow, add=T, border="gray25")
+    title(partype, cex.main=3)
+  }
+  dev.off()
+}
