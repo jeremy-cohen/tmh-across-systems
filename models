@@ -1,0 +1,184 @@
+# Thermal mismatch hypothesis across systems (TMHAS)
+# Analyses
+
+library(visreg)
+library(lattice)
+library(glmmTMB)
+library(lme4)
+library(MuMIn)
+library(data.table)
+library(ggplot2)
+library(gridExtra)
+
+# Load data with extracted climate values
+setwd("~/tmhas/")
+datafinal <- read.csv("datafinal052120.csv")
+
+#MODELS#
+# Full model: Month-level temperature*Long-term temperature
+# *one of 5 two-level interactors
+# +other four interactors+abs(latitude)+parasite type
+# random effects: host class (crude taxonomy) and study
+# Interactors = metabolism, migration, habitat, 
+# ecto/endoparasite, parasite life cycle
+# The 5 full models are compared with A) null models,
+# B) models without interactions,
+# C) models with only two-way thermal mismatch interaction
+# Using AICs, pseudo-r2s, chi-squared tests
+# Visreg is used to plot interactions
+
+setwd("~/tmhas/glmm/")
+
+# Define the factors interacting with thermal mismatches
+interactors <- c("Thermal.biology","Habitat","Migration","Transmission.mode",
+                 "Disease.type")
+int.names <- c("Thermal biology","Habitat","Migration","Transmission mode",
+               "Disease type")
+# Define model names
+model.names <- c("No interactions","2-way interaction","3-way interaction")
+# Define titles for plots
+title <- c("Cold-adapted hosts","Warm-adapted hosts")
+# Define axis labels
+labels <- c('Temperature during testing (°C)','Prevalence (log odds ratio)')
+# Define visreg bounds for tmp
+tmp.set <- as.numeric(quantile(datafinal$Longterm.tmp,c(.1,.9)))
+# Set graphing parameters
+trellis.par.set(strip.background=list(col="transparent"), 
+                strip.border = c(list(col="transparent"),(col="black")))
+
+{# Blank output to fill with each model's metrics
+  metrics.out <- matrix(nrow=0, ncol=5)
+  # Loop the models (warning- could take a while)
+  for(i in 1:length(interactors)){
+    # Designate interaction column for this loop
+    datamodel <- datafinal
+    datamodel$int <- datamodel[,interactors[i]]
+    # For disease type, subset levels with enough data
+    if(interactors[i]=="Disease.type"){
+      datamodel <- datamodel[datamodel$int!="Arthropod" 
+                             & datamodel$int!="Protozoa"
+                             ,]
+      datamodel <- droplevels(datamodel)
+    }
+    if(interactors[i]=="Transmission.mode"){
+      datamodel <- datamodel[datamodel$int!="both",]
+      datamodel <- droplevels(datamodel)
+    }
+    
+    ##### MODELS (5)
+    # Null model with no predictors for comparison
+    glmm.null <- glmmTMB(cbind(Infected, Uninfected)~1
+                         +(1|Host.class)+(1|Paper),
+                         family="binomial", data=datamodel)
+    # Model with no interactions
+    glmm.1 <- glmmTMB(cbind(Infected, Uninfected)~
+                        Longterm.tmp+Monthly.tmp
+                      +Migration+Thermal.biology+Habitat
+                      +Disease.type+log(Monthly.pre+1)
+                      +abslat+(1|Host.class)+(1|Paper),
+                      family="binomial", data=datamodel)
+    # Model with thermal mismatch interaction
+    glmm.2 <- glmmTMB(cbind(Infected, Uninfected)~
+                        Longterm.tmp:Monthly.tmp
+                      +Longterm.tmp+Monthly.tmp
+                      +Migration+Thermal.biology+Habitat
+                      +Disease.type+log(Monthly.pre+1)
+                      +abslat+(1|Host.class)+(1|Paper),
+                      family="binomial", data=datamodel)
+    # Model with 3-way between thermal mismatch & an interactor
+    glmm <- glmmTMB(cbind(Infected, Uninfected)~
+                      Longterm.tmp:Monthly.tmp:int
+                    +Longterm.tmp:Monthly.tmp
+                    +Longterm.tmp:int
+                    +Monthly.tmp:int
+                    +Longterm.tmp+Monthly.tmp
+                    +Migration+Thermal.biology+Habitat
+                    +Disease.type+log(Monthly.pre+1)
+                    +abslat+(1|Host.class)
+                    +(1|Paper),
+                    family="binomial", data=datamodel)
+    # Name full model
+    assign(paste0("glmm.",interactors[i]), glmm)
+    
+    ##### METRICS  
+    # AICs
+    AICs <- c(AIC(glmm.1),AIC(glmm.2),AIC(glmm))
+    # Pseudo-r2s
+    rsq.1 <- r.squaredLR(glmm.1, null=glmm.null)[1]
+    rsq.2 <- r.squaredLR(glmm.2, null=glmm.null)[1]
+    rsq.full <- r.squaredLR(glmm, null=glmm.null)[1]
+    rsqs <- c(rsq.1,rsq.2,rsq.full)
+    # Chi-squared tests
+    anova <- anova(glmm, glmm.1, glmm.2)
+    
+    # VISREG PLOTS (names and saves plots)
+    # figure out ordering of levels for plot naming
+    levels <- sort(as.character(unique(datamodel$int)))
+    # Plotting approach is overlay for 2-level interactors
+    # Separate plots for 3+ level interactors
+    if(i==5){
+      # Separated
+      jpeg('visreg_Disease.type.jpg', height=800, width=1000)
+      par(mai=c(.9,.9,.9,.9), mar=c(5,4,4,2), mfrow=c(1,2), mgp=c(2.7,1.3,0)) 
+      for (v in 1:2){
+        visreg(glmm, "Monthly.tmp", by="int", 
+               cond=list(Longterm.tmp=tmp.set[v]), overlay=T, breaks=2,
+               points=list(col='transparent', bg='transparent'), 
+               line.par=list(col='black', lwd=3, lty=1), legend=F,
+               scales=list(alternating=FALSE, tck=c(1,0)), strip=F,
+               strip.names=F, fill.par='gray', ylim=c(-2.5,3),
+               xlab=list(labels[1],cex=2), ylab=list(labels[2],cex=2),
+               cex.axis=2, 
+               main=list(title[v],cex=2.3))
+        if(v==1){legend("topleft", c("Bacteria","Fungus","Helminth","Virus"), cex=2.2,
+                        lty=1, lwd=3, col=c("salmon", "darkolivegreen3", "cyan3", "darkorchid1"), 
+                        bty="n")}
+      }
+      dev.off()
+    }else{
+      # Overlay
+      if(i==1|i==3){
+        jpeg(paste0('visreg_',interactors[i],'_',interactors[i+1],'.jpg'),
+             height=1500, width=1300)
+        par(mar=c(5,5,5,5), mai = c(1.2,1.2,1.2,1.2),  mgp=c(5,1.5,0), mfrow=c(2,2))}
+      for (v in 1:2){
+        visreg(glmm, "Monthly.tmp", by="int", 
+               cond=list(Longterm.tmp=tmp.set[v]), breaks=2, overlay=T, 
+               points=list(col='black', bg=c('black','transparent'), cex=1.25, pch=21), 
+               line.par=list(col='black', lwd=3, lty=1), legend=F,
+               fill.par=list(col=c(adjustcolor("darkolivegreen3",alpha.f=.5),
+                                   adjustcolor("darkorchid1",alpha.f=.5))),
+               scales=list(alternating=FALSE, tck=c(1,0)), strip=T, strip.names=T, 
+               xlab=list(labels[1],cex=3), ylab=list(labels[2],cex=3),
+               cex.axis=2.5, 
+               main=list(paste0(title[v]," by ",int.names[i]),cex=2.5))
+        if(v==1){
+          if(i==3){
+            legend("topleft", c("Non-migrant","Migrant"), cex=2.2,
+                   lty=1, lwd=3, col=c("darkolivegreen3","darkorchid1"), 
+                   bty="n")
+          }else{
+            legend("topleft",levels[1:2], cex=2.2,
+                   lty=1, lwd=3, col=c("darkolivegreen3", "darkorchid1"), 
+                   bty="n")}
+        }
+      }
+      if(i==2|i==4){dev.off()}
+    }
+    
+    # Save summary table
+    write.csv(summary(glmm)$coef$cond, 
+              file=paste0(interactors[i],".csv"))
+    # Attach metrics
+    metrics.out <- rbind(metrics.out, 
+                         cbind(interactors[i],model.names,AICs,rsqs,anova$Chisq))
+    # Status update
+    print(paste(interactors[i],"is complete!"))
+  }
+  # Name columns of metrics output and save
+  colnames(metrics.out) <- c("interactor","model.name","AIC",
+                             "rsq","chisq")
+  write.csv(metrics.out, file="metrics.csv")
+  
+  save.image("run051920.RData")
+}
