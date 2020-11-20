@@ -8,7 +8,7 @@
       "@language" : "en"
     } ],
     "rdfs:comment" : [ "inspired by https://www.w3.org/TR/2015/REC-tabular-data-model-20151217/" ],
-    "url" : "file:///home/jorrit/proj/globi/data/tmh-across-systems/datafinal052120.csv",
+    "url" : "datafinal052120.csv",
     "dcterms:bibliographicCitation" : "Cohen JM, Sauer EL, Santiago O, Spencer S, Rohr JR. 2020. Divergent impacts of warming weather on wildlife disease risk across climates. Science. doi:10.1126/science.abb1702", 
     "doi" : "10.1126/science.abb1702",
     "delimiter" : ",",
