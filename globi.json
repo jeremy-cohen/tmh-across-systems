@@ -1,0 +1,185 @@
+{
+  "@context" : [ "http://www.w3.org/ns/csvw", {
+    "@language" : "en"
+  } ],
+  "rdfs:comment" : [ "inspired by https://www.w3.org/TR/2015/REC-tabular-data-model-20151217/" ],
+  "tables" : [ {
+    "@context" : [ "http://www.w3.org/ns/csvw", {
+      "@language" : "en"
+    } ],
+    "rdfs:comment" : [ "inspired by https://www.w3.org/TR/2015/REC-tabular-data-model-20151217/" ],
+    "url" : "file:///home/jorrit/proj/globi/data/tmh-across-systems/datafinal052120.csv",
+    "dcterms:bibliographicCitation" : "Cohen JM, Sauer EL, Santiago O, Spencer S, Rohr JR. 2020. Divergent impacts of warming weather on wildlife disease risk across climates. Science. doi:10.1126/science.abb1702", 
+    "doi" : "10.1126/science.abb1702",
+    "delimiter" : ",",
+    "headerRowCount" : 1,
+    "null" : [ "" ],
+    "tableSchema" : {
+      "columns" : [ {
+        "name" : "NUM_ID",
+        "titles" : "NUM_ID",
+        "datatype" : "string"
+      }, {
+        "name" : "ID",
+        "titles" : "ID",
+        "datatype" : "string"
+      }, {
+        "name" : "set",
+        "titles" : "set",
+        "datatype" : "string"
+      }, {
+        "name" : "Extractor",
+        "titles" : "Extractor",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonSpecies",
+        "titles" : "Host.species",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonFamily",
+        "titles" : "Host.family",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonOrder",
+        "titles" : "Host.order",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonClass",
+        "titles" : "Host.class",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonPhylum",
+        "titles" : "Host.phyla",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceTaxonKingdom",
+        "titles" : "Host.kingdom",
+        "datatype" : "string"
+      }, {
+        "name" : "sourceLifeStageName",
+        "titles" : "Host.Age",
+        "datatype" : "string"
+      }, {
+        "name" : "habitatName",
+        "titles" : "Habitat",
+        "datatype" : "string"
+      }, {
+        "name" : "Water",
+        "titles" : "Water",
+        "datatype" : "string"
+      }, {
+        "name" : "Migration",
+        "titles" : "Migration",
+        "datatype" : "string"
+      }, {
+        "name" : "Thermal.biology",
+        "titles" : "Thermal.biology",
+        "datatype" : "string"
+      }, {
+        "name" : "targetTaxonSpecies",
+        "titles" : "Disease.species",
+        "datatype" : "string"
+      }, {
+        "name" : "Disease.isolate",
+        "titles" : "Disease.isolate",
+        "datatype" : "string"
+      }, {
+        "name" : "Disease.type",
+        "titles" : "Disease.type",
+        "datatype" : "string"
+      }, {
+        "name" : "Detection.method",
+        "titles" : "Detection.method",
+        "datatype" : "string"
+      }, {
+        "name" : "Detection.Detail",
+        "titles" : "Detection.Detail",
+        "datatype" : "string"
+      }, {
+        "name" : "Transmission.mode",
+        "titles" : "Transmission.mode",
+        "datatype" : "string"
+      }, {
+        "name" : "interactionTypeName",
+        "titles" : "ecto.endo.parasite",
+        "datatype" : "string"
+      }, {
+        "name" : "decimalLatitude",
+        "titles" : "Latitude",
+        "datatype" : "string"
+      }, {
+        "name" : "decimalLongitude",
+        "titles" : "Longitude",
+        "datatype" : "string"
+      }, {
+        "name" : "localityName",
+        "titles" : "Location",
+        "datatype" : "string"
+      }, {
+        "name" : "Month.s.",
+        "titles" : "Month.s.",
+        "datatype" : "string"
+      }, {
+        "name" : "Year",
+        "titles" : "Year",
+        "datatype" : "string"
+      }, {
+        "name" : "http://rs.tdwg.org/dwc/terms/eventDate",
+        "titles" : "Date",
+        "datatype" : "string"
+      }, {
+        "name" : "Span",
+        "titles" : "Span",
+        "datatype" : "string"
+      }, {
+        "name" : "n",
+        "titles" : "n",
+        "datatype" : "string"
+      }, {
+        "name" : "Infected",
+        "titles" : "Infected",
+        "datatype" : "string"
+      }, {
+        "name" : "Prevalence",
+        "titles" : "Prevalence",
+        "datatype" : "string"
+      }, {
+        "name" : "Paper",
+        "titles" : "Paper",
+        "datatype" : "string"
+      }, {
+        "name" : "referenceCitation",
+        "titles" : "Full.citation",
+        "datatype" : "string"
+      }, {
+        "name" : "Longterm.tmp",
+        "titles" : "Longterm.tmp",
+        "datatype" : "string"
+      }, {
+        "name" : "bio7",
+        "titles" : "bio7",
+        "datatype" : "string"
+      }, {
+        "name" : "Longterm.pre",
+        "titles" : "Longterm.pre",
+        "datatype" : "string"
+      }, {
+        "name" : "Monthly.tmp",
+        "titles" : "Monthly.tmp",
+        "datatype" : "string"
+      }, {
+        "name" : "Monthly.pre",
+        "titles" : "Monthly.pre",
+        "datatype" : "string"
+      }, {
+        "name" : "Uninfected",
+        "titles" : "Uninfected",
+        "datatype" : "string"
+      }, {
+        "name" : "abslat",
+        "titles" : "abslat",
+        "datatype" : "string"
+      } ]
+    }
+  } ]
+}

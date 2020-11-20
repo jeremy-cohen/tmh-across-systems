@@ -1,0 +1,3 @@
+provided_interaction_type_label,provided_interaction_type_id,mapped_to_interaction_type_label,mapped_to_interaction_type_id
+endoparasite,,has endoparasite,http://purl.obolibrary.org/obo/RO_0002635
+ectoparasite,,has ectoparasite,http://purl.obolibrary.org/obo/RO_0002633
